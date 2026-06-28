@@ -352,17 +352,25 @@ class VideoPlayerMethodHandler(
         // (the old WebView player's default). media3 ignores Twitch's
         // proprietary #EXT-X-TWITCH-PREFETCH partial segments, so a full
         // segment (~2s) is the floor; the playback-speed window below lets the
-        // player gently catch back up to target after a rebuffer instead of
-        // permanently drifting toward maxOffset. Without an explicit target,
-        // media3 defaults to 3×segmentDuration (~6s), which is the regression.
+        // player gently catch back up to target after a rebuffer. Without an
+        // explicit target, media3 defaults to 3×segmentDuration (~6s), which is
+        // the regression.
+        //
+        // maxOffset is a wide ceiling (not a tight clamp): the target still
+        // pulls playback toward ~2s, so normal low-latency behaviour is
+        // unchanged, but a stream that legitimately sits further back (a
+        // broadcaster on normal/high-latency mode, an added stream delay, or
+        // chunkier segments) gets slack instead of media3 fighting to hold an
+        // unreachable offset. ±3% is the standard near-imperceptible catch-up
+        // rate.
         if (isHls) {
             mediaItemBuilder.setLiveConfiguration(
                 MediaItem.LiveConfiguration.Builder()
                     .setTargetOffsetMs(2_000)
                     .setMinOffsetMs(1_000)
-                    .setMaxOffsetMs(6_000)
-                    .setMinPlaybackSpeed(0.95f)
-                    .setMaxPlaybackSpeed(1.05f)
+                    .setMaxOffsetMs(30_000)
+                    .setMinPlaybackSpeed(0.97f)
+                    .setMaxPlaybackSpeed(1.03f)
                     .build()
             )
         }
