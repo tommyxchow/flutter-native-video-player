@@ -18,6 +18,7 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import androidx.media3.exoplayer.hls.HlsMediaSource
+import com.huddlecommunity.better_native_video_player.hls.TwitchLowLatencyHlsPlaylistParserFactory
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
@@ -345,15 +346,23 @@ class VideoPlayerMethodHandler(
             }
         }
 
-        // Configure for low-latency live HLS
+        // Configure for low-latency live HLS.
+        //
+        // Target ~2s behind the live edge to match Twitch's "low latency" mode
+        // (the old WebView player's default). media3 ignores Twitch's
+        // proprietary #EXT-X-TWITCH-PREFETCH partial segments, so a full
+        // segment (~2s) is the floor; the playback-speed window below lets the
+        // player gently catch back up to target after a rebuffer instead of
+        // permanently drifting toward maxOffset. Without an explicit target,
+        // media3 defaults to 3×segmentDuration (~6s), which is the regression.
         if (isHls) {
             mediaItemBuilder.setLiveConfiguration(
                 MediaItem.LiveConfiguration.Builder()
-                    .setTargetOffsetMs(6_000)
-                    .setMinOffsetMs(3_000)
-                    .setMaxOffsetMs(15_000)
-                    .setMinPlaybackSpeed(0.97f)
-                    .setMaxPlaybackSpeed(1.03f)
+                    .setTargetOffsetMs(2_000)
+                    .setMinOffsetMs(1_000)
+                    .setMaxOffsetMs(6_000)
+                    .setMinPlaybackSpeed(0.95f)
+                    .setMaxPlaybackSpeed(1.05f)
                     .build()
             )
         }
@@ -365,6 +374,9 @@ class VideoPlayerMethodHandler(
             // HLS stream
             Log.d(TAG, "Creating HLS media source")
             HlsMediaSource.Factory(finalDataSourceFactory)
+                // Promote Twitch's #EXT-X-TWITCH-PREFETCH segments so playback
+                // rides the live edge (low latency); no-op for non-Twitch HLS.
+                .setPlaylistParserFactory(TwitchLowLatencyHlsPlaylistParserFactory())
                 .createMediaSource(mediaItem)
         } else {
             // Progressive download/playback (MP4, local files, etc.)

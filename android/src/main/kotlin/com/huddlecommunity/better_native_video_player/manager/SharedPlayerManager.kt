@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
+import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.trackselection.DefaultTrackSelector
 import com.huddlecommunity.better_native_video_player.handlers.VideoPlayerMethodHandler
@@ -72,8 +73,28 @@ object SharedPlayerManager {
         ExoPlayer.Builder(context)
             .setTrackSelector(DefaultTrackSelector(context))
             .setAudioAttributes(AudioAttributes.DEFAULT, false)
+            .setLoadControl(lowLatencyLoadControl())
             .build()
             .apply { setWakeMode(C.WAKE_MODE_NETWORK) }
+
+    /// LoadControl tuned for low-latency live HLS.
+    ///
+    /// ExoPlayer's defaults gate (re)start of playback behind a 2.5s/5s buffer.
+    /// After any rebuffer the 5s `bufferForPlaybackAfterRebuffer` forces the
+    /// player ~5s behind the live edge and the gentle live-offset catch-up
+    /// never recovers it — so a single stall permanently inflates latency to
+    /// ~9s. Resuming with a small buffer keeps playback near the edge; the
+    /// live-offset target (set per MediaItem) does the rest. Buffer ceilings
+    /// stay modest since a live window can't be buffered past its edge anyway.
+    private fun lowLatencyLoadControl(): DefaultLoadControl =
+        DefaultLoadControl.Builder()
+            .setBufferDurationsMs(
+                /* minBufferMs = */ 2_000,
+                /* maxBufferMs = */ 10_000,
+                /* bufferForPlaybackMs = */ 1_000,
+                /* bufferForPlaybackAfterRebufferMs = */ 1_500,
+            )
+            .build()
 
     /**
      * Gets or creates a notification handler for the given controller ID
