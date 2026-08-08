@@ -38,7 +38,9 @@ class VideoPlayerNotificationHandler(
 ) {
     companion object {
         private const val TAG = "VideoPlayerNotification"
-        private const val NOTIFICATION_ID = 1001
+        // Public so the foreground service can reuse the same id (one media
+        // notification, not two).
+        const val NOTIFICATION_ID = 1001
         private const val CHANNEL_ID = "video_player_channel"
         private var sessionCounter = 0
     }
@@ -246,6 +248,13 @@ class VideoPlayerNotificationHandler(
         notificationManager.cancel(NOTIFICATION_ID)
         Log.d(TAG, "Notification hidden")
     }
+
+    /**
+     * The current MediaStyle notification, for use as the foreground-service
+     * notification, or null if the MediaSession isn't initialized yet.
+     */
+    fun foregroundNotification(): Notification? =
+        if (mediaSession != null) buildNotification() else null
 
     /**
      * Builds the media notification

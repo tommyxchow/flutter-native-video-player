@@ -3,4 +3,17 @@
          live streams keep playing when the screen is off. Released automatically
          when playback pauses or stops. -->
     <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!-- Keeps audio playing when the app is backgrounded / screen locked. The
+         foreground service is started while the app is visible so Android 17
+         grants while-in-use capability; without it, background audio is silenced. -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <application>
+        <service
+            android:name="com.huddlecommunity.better_native_video_player.PlaybackForegroundService"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+    </application>
 </manifest>

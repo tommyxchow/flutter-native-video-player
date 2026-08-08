@@ -299,6 +299,26 @@ class VideoPlayerMethodChannel {
     }
   }
 
+  /// Enables/disables the Android background-audio foreground service.
+  ///
+  /// Must be called while the app is visible so Android 17 grants the service
+  /// while-in-use capability. No-op on platforms without the service.
+  Future<void> setBackgroundPlaybackEnabled(bool enabled) async {
+    try {
+      await _methodChannel.invokeMethod<void>(
+        'setBackgroundPlaybackEnabled',
+        // viewId is required: the shared channel routes to the view by it;
+        // without it the plugin returns NO_VIEW and the call is dropped.
+        <String, Object>{
+          'viewId': primaryPlatformViewId,
+          'enabled': enabled,
+        },
+      );
+    } catch (e) {
+      debugPrint('Error calling setBackgroundPlaybackEnabled: $e');
+    }
+  }
+
   /// Enters fullscreen mode
   Future<void> enterFullScreen() async {
     try {

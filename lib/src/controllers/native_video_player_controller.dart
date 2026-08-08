@@ -1947,6 +1947,16 @@ class NativeVideoPlayerController {
     }
   }
 
+  /// Enables/disables the Android background-audio foreground service, which
+  /// keeps audio playing when the app is backgrounded / screen is locked.
+  ///
+  /// Call while the app is visible (Android 17 grants the foreground service
+  /// while-in-use capability only when started from the foreground). No-op when
+  /// no method channel is attached or on platforms without the service.
+  Future<void> setBackgroundPlaybackEnabled(bool enabled) async {
+    await _methodChannel?.setBackgroundPlaybackEnabled(enabled);
+  }
+
   /// Disables automatic inline Picture-in-Picture mode
   ///
   /// When disabled, PiP will NOT automatically start when the app goes to background.

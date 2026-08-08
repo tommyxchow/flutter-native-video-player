@@ -8,6 +8,7 @@ import android.media.AudioManager
 import android.os.Build
 import android.util.Log
 import com.huddlecommunity.better_native_video_player.NativeVideoPlayerPlugin
+import com.huddlecommunity.better_native_video_player.PlaybackForegroundService
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
@@ -227,6 +228,8 @@ class VideoPlayerMethodHandler(
             "configureForLivePlayback" -> handleConfigureForLivePlayback(call, result)
             "getLatencyToLive" -> handleGetLatencyToLive(result)
             "seekToLiveEdge" -> handleSeekToLiveEdge(result)
+            "setBackgroundPlaybackEnabled" ->
+                handleSetBackgroundPlaybackEnabled(call, result)
             "dispose" -> handleDispose(result)
             else -> result.notImplemented()
         }
@@ -1007,6 +1010,24 @@ class VideoPlayerMethodHandler(
 
     private fun handleSeekToLiveEdge(result: MethodChannel.Result) {
         player.seekToDefaultPosition()
+        result.success(null)
+    }
+
+    /**
+     * Starts/stops the mediaPlayback foreground service that keeps audio alive
+     * when the app is backgrounded / screen locked. Called from Dart while the
+     * app is visible so Android 17 grants the service while-in-use capability.
+     */
+    private fun handleSetBackgroundPlaybackEnabled(
+        call: MethodCall,
+        result: MethodChannel.Result,
+    ) {
+        val enabled = call.argument<Boolean>("enabled") ?: false
+        if (enabled) {
+            PlaybackForegroundService.start(context.applicationContext)
+        } else {
+            PlaybackForegroundService.stop(context.applicationContext)
+        }
         result.success(null)
     }
 }

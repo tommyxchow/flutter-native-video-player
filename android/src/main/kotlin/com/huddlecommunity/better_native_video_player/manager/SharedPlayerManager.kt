@@ -111,6 +111,19 @@ object SharedPlayerManager {
     }
 
     /**
+     * The `(id, notification)` for any active player, for the foreground service
+     * to call `startForeground` with. Returns the first ready notification, or
+     * null if no player has an initialized MediaSession yet.
+     */
+    fun activeForegroundNotification(): Pair<Int, android.app.Notification>? {
+        for (handler in notificationHandlers.values) {
+            val notification = handler.foregroundNotification() ?: continue
+            return VideoPlayerNotificationHandler.NOTIFICATION_ID to notification
+        }
+        return null
+    }
+
+    /**
      * Registers a platform view for a controller
      * The callback will be called when another view using the same controller is disposed
      */
